@@ -1,0 +1,50 @@
+# vim:set sw=4 sts=4 expandtab:
+#
+# Configuration file for the filebox backup utility. Primary contents is the
+# destinations to backup to and local directories, called roots, that are to be
+# backed up.
+#
+# Multiple destinations could be specified with unique names.
+
+# Local filesystem destination.
+destination {
+    name = "file-destination"
+    type = "file"
+    path = "/path/to/storage"
+}
+
+# AWS S3 destination.
+destination {
+    name = "s3-destination"
+    type = "s3"
+
+    bucket = "backup-bucket-name"
+    prefix = "backup-prefix"
+
+    accessKey = "aws-access-key"
+    secretKey = "aws-encryption-key"
+
+    # Encryption key used to encrypt the data sent to the S3 storage.
+    encryptionKey = "file-encryption-key"
+}
+
+root {
+    # Name is optional, it will be used to name the directory when restoring.
+    name = "my_documents"
+
+    # Absolute path to the directory to be backed up.
+    path = "/home/user/documents"
+
+    # Files and directories to exclude from the backup. The paths here should
+    # be relative to the root path.
+    exclude = [
+        "dir_to_exclude",
+        "file_to_exclude"
+    ]
+}
+
+root {
+    name = "another_root"
+    path = "/some/path"
+}
+
