@@ -50,36 +50,37 @@ class BackupManager(
     def backupRoot(root: Root): List[Sig] = {
         progressReporter.startRoot(root.path)
 
-        val files = root files
-        val fileSigs = new ListBuffer[Sig]()
-
-        files foreach {f =>
-            val sig = backupFile(root.path, f)
-            fileSigs += sig
-        }
+        val fileSigs = for {
+            f <- root.files
+            sig = backupFile(root.path, f)
+        } yield sig
 
         progressReporter.endRoot
 
-        fileSigs.toList
+        fileSigs collect {case Some(x) => x} toList
     }
 
 
     /**
      * Saves the given file and returns a signature of the manifest of the file
-     * in the block storage.
+     * in the block storage. Returns None if the file does not exist.
      */
-    def backupFile(rootPath: String, path: String): Sig = {
+    def backupFile(rootPath: String, path: String): Option[Sig] = {
         val file = new File(rootPath, path)
+
+        if(!file.exists) {
+            return None
+        }
 
         fileCache wasModified(file) match {
             case FileWasModified() =>
                 val sig = writeFile(rootPath, path, file)
                 fileCache.update(file, sig)
-                sig
+                Some(sig)
 
             case FileWasNotModified(sig) =>
                 progressReporter.fileSkipped(path)
-                sig
+                Some(sig)
         }
     }
 
