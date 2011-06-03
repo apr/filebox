@@ -3,6 +3,7 @@ package filebox
 
 import annotation._
 import java.io.{File, FileNotFoundException}
+import scala.util.Sorting.stableSort
 
 
 /**
@@ -25,7 +26,8 @@ class Root(
      */
     def files: Seq[String] = {
         def isExcluded(p: String) = excludes exists {p.startsWith(_)}
-        allFiles filterNot isExcluded
+        val fs = allFiles filterNot isExcluded
+        stableSort(fs)
     }
 
 
