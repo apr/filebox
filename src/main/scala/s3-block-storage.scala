@@ -3,6 +3,7 @@ package filebox
 
 import spec._
 
+import com.amazonaws._
 import com.amazonaws.auth._
 import com.amazonaws.services.s3._
 import com.amazonaws.services.s3.model._
@@ -68,6 +69,24 @@ class S3BlockStorage(
             return sig
         }
 
+        restartableWrite(sig, data, len, dataType, 5)
+
+        blockCache += cacheEntry
+
+        sig
+    }
+
+
+    // A helper function that would try to restart the write opration up to the
+    // given number of retries in case of recoverable errors.
+    private def restartableWrite(
+        sig: Sig, data: Array[Byte], len: Int, dataType: String, retries: Int)
+    {
+        def canRetry(e: AmazonClientException) =
+            e.getMessage().startsWith("Unable to execute HTTP " +
+                "request: Input stream cannot be reset as") &&
+            retries > 0
+
         val om = new ObjectMetadata
         om.setContentLength(len)
 
@@ -75,13 +94,14 @@ class S3BlockStorage(
         try {
             val res = s3client.putObject(
                 bucketName, blockFileName(sig, dataType), is, om)
+        } catch {
+            case e: AmazonClientException =>
+                if(canRetry(e)) restartableWrite(
+                    sig, data, len, dataType, retries - 1)
+                else throw e
         } finally {
             is.close
         }
-
-        blockCache += cacheEntry
-
-        sig
     }
 
 
