@@ -1,6 +1,8 @@
 
 package filebox.spec
 
+import annotation._
+
 
 /**
  * Converts a spec structure into a string.
@@ -43,23 +45,33 @@ class SpecFormatter {
     }
 
     def formatStringArray(a: StringArray, indent: Int = 0): String = {
-        def formatVals(xs: List[String], sep: String, indent: Int): String = {
+        @tailrec
+        def formatVals(
+            b: StringBuilder,
+            xs: List[String],
+            sep: String,
+            indent: Int)
+        {
             xs match {
-                case Nil => ""
+                case Nil =>
                 case x::xss =>
-                    val b = new StringBuilder
                     if(!sep.isEmpty) b append sep append "\n"
                     b append mkIndent(indent)
                     b append '"' append escape(x) append '"'
-                    b append formatVals(xss, ",", indent)
-                    b.toString
+                    formatVals(b, xss, ",", indent)
             }
         }
 
         val b = mkIndent(indent)
         b append a.key append " = [\n"
-        val vals = formatVals(a.value, "", indent + defaultIndent)
-        if(vals != "") b append vals append "\n"
+
+        val bl = b.length
+        formatVals(b, a.value, "", indent + defaultIndent)
+
+        if(b.length > bl) {
+            b append "\n"
+        }
+
         b append mkIndent(indent) append "]"
         b.toString
     }
